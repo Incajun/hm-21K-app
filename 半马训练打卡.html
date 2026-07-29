@@ -1,0 +1,649 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>半马训练打卡</title>
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei",sans-serif;background:#0a0a0a;color:#e0e0e0;max-width:600px;margin:0 auto;padding:16px;padding-bottom:100px}
+.header{display:flex;justify-content:space-between;align-items:center;margin-bottom:10px}
+.header h1{font-size:19px;color:#fff}
+.header-right{display:flex;align-items:center;gap:10px}
+.gear-btn{background:none;border:none;color:#666;font-size:20px;cursor:pointer;padding:2px 6px;-webkit-tap-highlight-color:transparent}
+.backup-menu{display:none;background:#1a1a1a;border-radius:8px;padding:6px;margin-bottom:10px;gap:6px}
+.backup-menu.show{display:flex}
+.backup-menu button{flex:1;padding:8px;background:#222;border:1px solid #333;color:#aaa;border-radius:6px;font-size:12px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.backup-menu button:active{background:#333}
+.progress-wrap{background:#1a1a1a;border-radius:10px;padding:12px 14px;margin-bottom:14px}
+.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#888;margin-bottom:8px}
+.progress-label strong{color:#4fc3f7;font-size:16px}
+.progress-bar{height:7px;background:#2a2a2a;border-radius:4px;overflow:hidden}
+.progress-fill{height:100%;background:linear-gradient(90deg,#4fc3f7,#29b6f6);border-radius:4px;transition:width .3s}
+.week-card{background:#1a1a1a;border-radius:10px;margin-bottom:10px;overflow:hidden}
+.week-header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
+.week-header:active{background:#222}
+.week-title{font-size:14px;font-weight:600;color:#fff}
+.week-meta{font-size:11px;color:#666;margin-top:2px}
+.week-badge{font-size:11px;padding:2px 8px;border-radius:8px;white-space:nowrap}
+.week-badge.done{background:#1b3a1b;color:#66bb6a}
+.week-badge.partial{background:#333;color:#ffb74d}
+.week-badge.pending{background:#222;color:#555}
+.week-arrow{font-size:12px;color:#444;transition:transform .2s}
+.week-card.open .week-arrow{transform:rotate(90deg)}
+.week-body{display:none;padding:0 14px 12px}
+.week-card.open .week-body{display:block}
+.day-card{background:#0f0f0f;border-radius:8px;padding:10px 12px;margin-bottom:6px;cursor:pointer;-webkit-tap-highlight-color:transparent;transition:background .15s;border-left:3px solid transparent}
+.day-card:active{background:#161616}
+.day-card.checked{border-left-color:#66bb6a}
+.day-card.rest{opacity:.4}
+.day-header{display:flex;align-items:center;gap:8px;margin-bottom:3px}
+.day-checkbox{width:18px;height:18px;border:2px solid #444;border-radius:4px;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:12px;color:#fff}
+.day-card.checked .day-checkbox{background:#66bb6a;border-color:#66bb6a}
+.day-card.checked .day-checkbox::after{content:'\2713';font-weight:bold}
+.day-name{font-size:12px;color:#888;min-width:30px}
+.day-date{font-size:12px;color:#4fc3f7;cursor:pointer;transition:color .2s}.day-date:hover{color:#81d4fa;text-decoration:underline}
+.day-dist{font-size:11px;color:#555;margin-left:auto}
+.day-content{font-size:13px;color:#ccc;margin-left:26px;line-height:1.4}
+.day-card.checked .day-content{color:#666}
+.day-exercise{margin-left:26px;margin-top:6px;font-size:12px;color:#66bb6a;background:#1a2a1a;padding:4px 8px;border-radius:4px;display:inline-block}
+.ex-edit-btn{font-size:11px;color:#4fc3f7;margin-left:8px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.modal{position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,.7);display:flex;align-items:flex-end;justify-content:center;z-index:200}
+.modal-box{background:#1a1a1a;border-radius:14px 14px 0 0;width:100%;max-width:600px;max-height:80vh;overflow-y:auto;padding:16px}
+.modal-title{font-size:16px;font-weight:600;color:#fff;margin-bottom:12px}
+.modal-actions{display:flex;gap:8px;margin-top:12px}
+.btn-primary{flex:1;padding:12px;background:#1b3a4a;border:1px solid #1e5878;color:#4fc3f7;border-radius:8px;font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn-primary:active{background:#1e4858}
+.btn-secondary{flex:1;padding:12px;background:#222;border:1px solid #333;color:#888;border-radius:8px;font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn-secondary:active{background:#2a2a2a}
+.btn-danger{flex:1;padding:12px;background:#3a1a1a;border:1px solid #6b2a2a;color:#ef5350;border-radius:8px;font-size:14px;cursor:pointer;-webkit-tap-highlight-color:transparent}
+.btn-danger:active{background:#4a1a1a}
+.btn-danger:disabled{opacity:0.35;cursor:default}
+.edit-form{display:flex;flex-direction:column;gap:10px}
+.edit-form label{font-size:12px;color:#888;display:flex;flex-direction:column;gap:4px}
+.edit-form input,.edit-form textarea{background:#0f0f0f;border:1px solid #333;border-radius:6px;padding:8px 10px;color:#e0e0e0;font-size:14px;font-family:inherit;outline:none}
+.edit-form input:focus,.edit-form textarea:focus{border-color:#4fc3f7}
+.edit-form input:read-only{color:#666}
+.toast{position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 20px;border-radius:20px;font-size:13px;z-index:300;opacity:0;transition:opacity .3s;pointer-events:none}
+.toast.show{opacity:1}
+</style>
+</head>
+<body>
+<div class="header">
+<h1>半马训练打卡</h1>
+<div class="header-right">
+<button class="gear-btn" onclick="toggleBackupMenu()">⚙</button>
+</div>
+</div>
+<div class="backup-menu" id="backupMenu">
+<button onclick="exportData()">导出备份</button>
+<button onclick="document.getElementById('importInput').click()">导入备份</button>
+<input type="file" id="importInput" accept=".json" style="display:none" onchange="importData(this.files[0])">
+<button onclick="showResetConfirm()" style="margin-top:6px;padding:6px 10px;font-size:11px;background:transparent;border:1px solid #5a2a2a;color:#8b5a5a;border-radius:4px;cursor:pointer;-webkit-tap-highlight-color:transparent">重置所有打卡</button>
+</div>
+<div class="progress-wrap">
+<div class="progress-label"><span>训练进度</span><span><strong id="doneCount">0</strong>/<span id="totalCount">0</span></span></div>
+<div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
+</div>
+<div id="weeks"></div>
+<div class="modal" id="editModal" style="display:none"><div class="modal-box"><div class="modal-title" id="editTitle">运动数据</div><div class="edit-form"><label>距离 (km)<input type="number" id="editDistance" step="0.01" oninput="updatePace()"></label><label>用时 (如 25:30)<input type="text" id="editDuration" oninput="updatePace()"></label><label>配速 (自动计算)<input type="text" id="editPace" readonly></label><label>心率 (bpm)<input type="number" id="editHR"></label><label>步频 (spm)<input type="number" id="editCadence"></label><label>备注<textarea id="editNotes" rows="2"></textarea></label></div><div class="modal-actions"><button class="btn-primary" onclick="saveExercise()">保存</button><button class="btn-secondary" onclick="document.getElementById('editModal').style.display='none'">取消</button></div></div></div>
+<div class="modal" id="dateModal" style="display:none"><div class="modal-box"><div class="modal-title">修改日期</div><div style="margin-bottom:8px;font-size:13px;color:#aaa" id="dateModalInfo"></div><input type="date" id="dateModalInput" style="width:100%;padding:10px;border-radius:6px;background:#1a1a2e;border:1px solid #555;color:#ddd;font-size:14px"><div style="margin-top:8px;font-size:13px;color:#8be9fd" id="dateModalPreview"></div><div class="modal-actions"><button class="btn-primary" onclick="saveDateChange()">保存</button><button class="btn-secondary" onclick="closeDateEditor()">取消</button></div></div></div>
+<div class="modal" id="resetModal" style="display:none"><div class="modal-box"><div class="modal-title" style="color:#ef5350">⚠ 重置所有打卡数据</div><div style="margin-bottom:10px;font-size:13px;color:#aaa">此操作将清除所有打卡记录和运动数据。<br><strong style="color:#ef5350">不可撤销！</strong></div><div style="margin-bottom:8px;font-size:12px;color:#888">请输入 <code style="color:#ef5350;background:#2a1a1a;padding:2px 6px;border-radius:3px">确认重置</code> 后点击按钮：</div><input type="text" id="resetInput" placeholder="输入 确认重置" style="width:100%;padding:8px;border-radius:6px;background:#1a1a2e;border:1px solid #333;color:#ddd;font-size:13px;margin-bottom:12px" oninput="document.getElementById('resetBtn').disabled=this.value!=='确认重置'"><div class="modal-actions"><button class="btn-danger" id="resetBtn" onclick="doReset()" disabled>确认重置</button><button class="btn-secondary" onclick="closeResetModal()">取消</button></div></div></div>
+<script>
+// ====== Training Plan ======
+const weeks=[
+{n:1,phase:"恢复周",range:"07/22-07/28",days:[
+{d:"周四",date:"2026-07-23",content:"轻松跑 3km，配速7'30-8'00，心率<150",dist:"3km",rest:false},
+{d:"周六",date:"2026-07-25",content:"步频训练：1km步频180走2min×3组 + 轻松跑2km",dist:"5km",rest:false},
+{d:"周日",date:"2026-07-26",content:"轻松跑 4km，配速7'30，心率<150",dist:"4km",rest:false},
+{d:"周一",date:"2026-07-27",content:"休息（可做拉伸/力量训练）",dist:"—",rest:true}
+]},
+{n:2,phase:"有氧底座",range:"07/29-08/04",days:[
+{d:"周四",date:"2026-07-30",content:"轻松跑 4km，配速7'15-7'30，心率<155",dist:"4km",rest:false},
+{d:"周六",date:"2026-08-01",content:"步频训练：1km步频180走2min×4组",dist:"4km",rest:false},
+{d:"周日",date:"2026-08-02",content:"轻松跑 6km，配速7'15，心率<155",dist:"6km",rest:false},
+{d:"周一",date:"2026-08-03",content:"短距离轻松跑 4km，配速7'30",dist:"4km",rest:false}
+]},
+{n:3,phase:"有氧底座",range:"08/05-08/11",days:[
+{d:"周四",date:"2026-08-06",content:"轻松跑 5km，配速7'15，心率<155",dist:"5km",rest:false},
+{d:"周六",date:"2026-08-08",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-08-09",content:"长距离慢跑 7km，配速7'00-7'15，心率<155",dist:"7km",rest:false},
+{d:"周一",date:"2026-08-10",content:"轻松跑 4km，配速7'30",dist:"4km",rest:false}
+]},
+{n:4,phase:"有氧底座",range:"08/12-08/18",days:[
+{d:"周四",date:"2026-08-13",content:"轻松跑 6km，配速7'00-7'15，心率<155",dist:"6km",rest:false},
+{d:"周六",date:"2026-08-15",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-08-16",content:"长距离慢跑 8km，配速7'00，心率<158",dist:"8km",rest:false},
+{d:"周一",date:"2026-08-17",content:"轻松跑 5km，配速7'30",dist:"5km",rest:false}
+]},
+{n:5,phase:"阈值突破",range:"08/19-08/25",days:[
+{d:"周四",date:"2026-08-20",content:"阈值跑：2km热身 + 3km阈值6'30-6'40心率160-165 + 2km放松",dist:"7km",rest:false},
+{d:"周六",date:"2026-08-22",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-08-23",content:"长距离慢跑 10km，配速7'00-7'15，心率<158",dist:"10km",rest:false},
+{d:"周一",date:"2026-08-24",content:"轻松跑 5km，配速7'30",dist:"5km",rest:false}
+]},
+{n:6,phase:"阈值突破",range:"08/26-09/01",days:[
+{d:"周四",date:"2026-08-27",content:"阈值跑：2km热身 + 4km阈值6'25-6'35心率160-165 + 2km放松",dist:"8km",rest:false},
+{d:"周六",date:"2026-08-29",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-08-30",content:"长距离慢跑 12km，配速7'00，心率<160",dist:"12km",rest:false},
+{d:"周一",date:"2026-08-31",content:"轻松跑 4km，配速7'30",dist:"4km",rest:false}
+]},
+{n:7,phase:"阈值突破",range:"09/02-09/08",days:[
+{d:"周四",date:"2026-09-03",content:"阈值跑：2km热身 + 5km阈值6'20-6'30心率160-165 + 2km放松",dist:"9km",rest:false},
+{d:"周六",date:"2026-09-05",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-09-06",content:"长距离慢跑 13km，配速7'00-7'15，心率<160",dist:"13km",rest:false},
+{d:"周一",date:"2026-09-07",content:"轻松跑 3km，配速7'30",dist:"3km",rest:false}
+]},
+{n:8,phase:"阈值测试",range:"09/09-09/15",days:[
+{d:"周四",date:"2026-09-10",content:"阈值跑(轻量)：2km热身 + 3km阈值6'20 + 2km放松",dist:"7km",rest:false},
+{d:"周六",date:"2026-09-12",content:"步频训练：1km步频180走2min×4组",dist:"4km",rest:false},
+{d:"周日",date:"2026-09-13",content:"⭐ 10KM测试跑！配速6'40起步，后5km看体感提速",dist:"10km",rest:false},
+{d:"周一",date:"2026-09-14",content:"轻松恢复跑 3km，配速7'30+",dist:"3km",rest:false}
+]},
+{n:9,phase:"半马专项",range:"09/16-09/22",days:[
+{d:"周四",date:"2026-09-17",content:"阈值跑：2km热身 + 5km阈值6'20-6'30 + 2km放松",dist:"9km",rest:false},
+{d:"周六",date:"2026-09-19",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-09-20",content:"长距离慢跑 14km，配速7'00，心率<160",dist:"14km",rest:false},
+{d:"周一",date:"2026-09-21",content:"轻松跑 4km，配速7'30",dist:"4km",rest:false}
+]},
+{n:10,phase:"半马专项",range:"09/23-09/29",days:[
+{d:"周四",date:"2026-09-24",content:"阈值跑：2km热身 + 6km阈值6'15-6'25心率160-165 + 2km放松",dist:"10km",rest:false},
+{d:"周六",date:"2026-09-26",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-09-27",content:"长距离慢跑 16km，配速7'00-7'15，心率<160",dist:"16km",rest:false},
+{d:"周一",date:"2026-09-28",content:"轻松跑 3km，配速7'30",dist:"3km",rest:false}
+]},
+{n:11,phase:"半马专项",range:"09/30-10/06",days:[
+{d:"周四",date:"2026-10-01",content:"混合跑：2km热身+4km阈值6'15-6'25+3km半马配速6'40+2km放松",dist:"11km",rest:false},
+{d:"周六",date:"2026-10-03",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-10-04",content:"⭐ 最长距离训练 18km！前10km配速7'10压节奏，后8km提速到6'50-7'00",dist:"18km",rest:false},
+{d:"周一",date:"2026-10-05",content:"轻松恢复跑 2km",dist:"2km",rest:false}
+]},
+{n:12,phase:"半马专项",range:"10/07-10/13",days:[
+{d:"周四",date:"2026-10-08",content:"阈值跑：2km热身 + 5km阈值6'20 + 2km放松",dist:"9km",rest:false},
+{d:"周六",date:"2026-10-10",content:"步频训练：1km步频180走2min×4组",dist:"4km",rest:false},
+{d:"周日",date:"2026-10-11",content:"LSR 15km（模拟比赛：前5km压7'10，后10km 6'50-7'00）",dist:"15km",rest:false},
+{d:"周一",date:"2026-10-12",content:"轻松跑 7km，配速7'30",dist:"7km",rest:false}
+]},
+{n:13,phase:"减量期",range:"10/14-10/20",days:[
+{d:"周四",date:"2026-10-15",content:"阈值跑(轻量)：2km热身 + 3km阈值6'20 + 2km放松",dist:"7km",rest:false},
+{d:"周六",date:"2026-10-17",content:"轻松跑 6km，配速7'15，含2km步频175+",dist:"6km",rest:false},
+{d:"周日",date:"2026-10-18",content:"LSR 10km，配速7'10，最后2km提速到6'50",dist:"10km",rest:false},
+{d:"周一",date:"2026-10-19",content:"轻松跑 2km，配速7'30+",dist:"2km",rest:false}
+]},
+{n:14,phase:"比赛周",range:"10/21-10/27",days:[
+{d:"周四",date:"2026-10-22",content:"轻松跑 3km + 4组100m加速跑",dist:"4km",rest:false},
+{d:"周六",date:"2026-10-24",content:"轻松跑 2km，保持肌肉活性",dist:"2km",rest:false},
+{d:"周日",date:"2026-10-25",content:"⭐ 半马比赛日！21.1KM 🏅",dist:"21.1km",rest:false}
+]}
+];
+
+// Weekday names
+const WEEKDAY_CN=['周日','周一','周二','周三','周四','周五','周六'];
+function getWeekdayCN(dateStr){const d=new Date(dateStr+'T00:00:00');return WEEKDAY_CN[d.getDay()];}
+
+// Update week range from days
+function updateWeekRange(w){
+  const dates=w.days.map(d=>new Date(d.date+'T00:00:00'));
+  const min=new Date(Math.min(...dates));
+  const max=new Date(Math.max(...dates));
+  const fmt=d=>(d.getMonth()+1)+'/'+d.getDate();
+  w.range=fmt(min)+'-'+fmt(max);
+}
+
+// Build date index
+let dateIndex={};
+function rebuildIndex(){
+  dateIndex={};totalTrainings=0;
+  weeks.forEach((w,wi)=>{w.days.forEach((d,di)=>{dateIndex[d.date]={wi,di,content:d.content,rest:d.rest,dist:d.dist};if(!d.rest)totalTrainings++;})});
+  document.getElementById('totalCount').textContent=totalTrainings;
+}
+// rebuildIndex() is called in init() after overrides are applied
+
+// Apply persisted date overrides to weeks (so date changes survive refresh)
+function applyWeekOverrides(){
+  if(!state.weekOverrides)state.weekOverrides={};
+  for(const [key,newDate] of Object.entries(state.weekOverrides)){
+    const [wi,di]=key.split('-').map(Number);
+    if(weeks[wi]&&weeks[wi].days[di]){
+      weeks[wi].days[di].date=newDate;
+      weeks[wi].days[di].d=getWeekdayCN(newDate);
+    }
+  }
+  // Update week ranges
+  weeks.forEach(w=>updateWeekRange(w));
+}
+
+// Reset weeks to original plan dates
+function resetWeeksToOriginal(){
+  const origDates=[
+    ['2026-07-23','2026-07-25','2026-07-26','2026-07-27'],
+    ['2026-07-30','2026-08-01','2026-08-02','2026-08-03'],
+    ['2026-08-06','2026-08-08','2026-08-09','2026-08-10'],
+    ['2026-08-13','2026-08-15','2026-08-16','2026-08-17'],
+    ['2026-08-20','2026-08-22','2026-08-23','2026-08-24'],
+    ['2026-08-27','2026-08-29','2026-08-30','2026-08-31'],
+    ['2026-09-03','2026-09-05','2026-09-06','2026-09-07'],
+    ['2026-09-10','2026-09-12','2026-09-13','2026-09-14'],
+    ['2026-09-17','2026-09-19','2026-09-20','2026-09-21'],
+    ['2026-09-24','2026-09-26','2026-09-27','2026-09-28'],
+    ['2026-10-01','2026-10-03','2026-10-04','2026-10-05'],
+    ['2026-10-08','2026-10-10','2026-10-11','2026-10-12'],
+    ['2026-10-15','2026-10-17','2026-10-18','2026-10-19'],
+    ['2026-10-22','2026-10-24','2026-10-25']
+  ];
+  weeks.forEach((w,wi)=>{
+    origDates[wi].forEach((date,di)=>{w.days[di].date=date;w.days[di].d=getWeekdayCN(date);});
+  });
+}
+
+// ====== Config ======
+const DB_NAME='hm_train_db';
+const STORE_NAME='state';
+const DB_VERSION=1;
+const SYNC_SERVER=''; // Populated in init()
+
+// ====== State ======
+let state={items:{},lastModified:0};
+let editingDate=null;
+
+// ====== IndexedDB Storage (reliable in mobile browsers) ======
+function openDB(){
+  return new Promise((resolve,reject)=>{
+    const r=indexedDB.open(DB_NAME,DB_VERSION);
+    r.onupgradeneeded=(e)=>{
+      const db=e.target.result;
+      if(!db.objectStoreNames.contains(STORE_NAME))db.createObjectStore(STORE_NAME);
+    };
+    r.onsuccess=(e)=>resolve(e.target.result);
+    r.onerror=(e)=>reject(e.target.error);
+  });
+}
+async function dbGet(key){
+  try{
+    const db=await openDB();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(STORE_NAME,'readonly');
+      const store=tx.objectStore(STORE_NAME);
+      const req=store.get(key);
+      req.onsuccess=()=>resolve(req.result);
+      req.onerror=()=>reject(req.error);
+      tx.oncomplete=()=>db.close();
+    });
+  }catch(e){console.error('dbGet error:',e);return null;}
+}
+async function dbSet(key,value){
+  try{
+    const db=await openDB();
+    return new Promise((resolve,reject)=>{
+      const tx=db.transaction(STORE_NAME,'readwrite');
+      const store=tx.objectStore(STORE_NAME);
+      store.put(value,key);
+      tx.oncomplete=()=>{db.close();resolve();};
+      tx.onerror=()=>{db.close();reject(tx.error);};
+    });
+  }catch(e){console.error('dbSet error:',e);}
+}
+
+// ====== IMA Sync (only when server is running) ======
+function saveToServer(){
+  if(!SYNC_SERVER)return;
+  fetch(SYNC_SERVER+'/api/save',{
+    method:'POST',headers:{'Content-Type':'application/json'},
+    body:JSON.stringify({items:state.items,lastModified:state.lastModified})
+  }).then(r=>r.json()).then(d=>{if(d.ok)console.log('[IMA] Synced');})
+    .catch(()=>{}); // silently fail — local data is primary
+}
+async function loadFromServer(){
+  if(!SYNC_SERVER)return null;
+  try{
+    const r=await fetch(SYNC_SERVER+'/api/load');
+    const d=await r.json();
+    if(d.ok&&d.content){
+      const parsed=JSON.parse(d.content);
+      if(parsed.items&&Object.keys(parsed.items).length>0)return parsed;
+    }
+  }catch(e){}
+  return null;
+}
+
+// ====== Data persistence ======
+async function loadState(){
+  let bestData=null, bestModified=0, bestWeekOverrides=null;
+  // 1. Try IndexedDB first
+  try{
+    const data=await dbGet(STORE_NAME);
+    if(data&&data.items&&Object.keys(data.items).length>0){
+      bestData=data.items; bestModified=data.lastModified||0; bestWeekOverrides=data.weekOverrides||null;
+      console.log('[DB] Loaded',Object.keys(bestData).length,'records from IndexedDB');
+    }
+  }catch(e){console.error('IndexedDB load error:',e);}
+  // 2. Also check localStorage backup (all keys, including emergency)
+  try{
+    for(const key of ['hm_train_state_v4','hm_train_state_v3','hm_train_state_v2','hm_emergency']){
+      const raw=localStorage.getItem(key);
+      if(!raw)continue;
+      try{
+        const s=JSON.parse(raw);
+        if(!s.items||Object.keys(s.items).length===0)continue;
+        if(s.lastModified&&s.lastModified>bestModified){
+          bestData=s.items; bestModified=s.lastModified; bestWeekOverrides=s.weekOverrides||null;
+          console.log('[DB] Found fresher data in localStorage:',key,Object.keys(bestData).length,'records');
+        }else if(!bestWeekOverrides&&s.weekOverrides&&Object.keys(s.weekOverrides).length>0){
+          // Even if items are stale, preserve weekOverrides from any source
+          bestWeekOverrides=s.weekOverrides;
+        }
+      }catch(e){}
+    }
+  }catch(e){}
+  // 3. Merge: use the best source
+  if(bestData){
+    state.items=bestData;
+    state.lastModified=bestModified||Date.now();
+    // Restore week overrides (not zero — this was the missing piece)
+    state.weekOverrides=bestWeekOverrides||{};
+    // Ensure data is in both stores
+    saveState();
+    // Clean up old localStorage keys
+    try{
+      for(const key of ['hm_train_state_v4','hm_train_state_v3','hm_train_state_v2']){
+        localStorage.removeItem(key);
+      }
+    }catch(e){}
+    return;
+  }
+  console.log('[DB] No existing data found — fresh start');
+}
+async function saveState(){
+  state.lastModified=Date.now();
+  const payload={items:state.items,lastModified:state.lastModified,weekOverrides:state.weekOverrides||{}};
+  // Write to both stores — either one survives
+  let dbOk=false, lsOk=false;
+  try{
+    await dbSet(STORE_NAME,payload);
+    dbOk=true;
+  }catch(e){console.error('IndexedDB write error:',e);}
+  try{
+    localStorage.setItem('hm_emergency',JSON.stringify(payload));
+    lsOk=true;
+  }catch(e){console.error('localStorage write error:',e);}
+  if(dbOk||lsOk){
+    console.log('[DB] Saved',Object.keys(state.items).length,'records (DB:'+dbOk,'LS:'+lsOk+')');
+  }else{
+    console.error('[DB] CRITICAL: both stores failed!');
+  }
+  saveToServer();
+}
+
+// ====== Rendering ======
+function renderAll(){renderProgress();renderWeeks();}
+function renderProgress(){
+  let done=0;
+  // Same criteria as renderWeeks: only count checked records for non-rest days in the plan
+  for(const date of Object.keys(state.items)){
+    if(!state.items[date].checked)continue;
+    const di=dateIndex[date];
+    if(!di||di.rest)continue;
+    done++;
+  }
+  document.getElementById('doneCount').textContent=done;
+  document.getElementById('progressFill').style.width=(done/totalTrainings*100)+'%';
+}
+function renderWeeks(){
+  const container=document.getElementById('weeks');
+  container.innerHTML='';
+  weeks.forEach((w,wi)=>{
+    let done=0,total=0;
+    w.days.forEach(d=>{if(!d.rest){total++;if(state.items[d.date]&&state.items[d.date].checked)done++;}});
+    const badgeClass=done===total?'done':(done>0?'partial':'pending');
+    const badgeText=done+'/'+total;
+    const card=document.createElement('div');
+    card.className='week-card'+(wi===0?' open':'');
+    card.innerHTML=`<div class="week-header" onclick="this.parentElement.classList.toggle('open')"><div><div class="week-title">第${w.n}周 · ${w.phase}</div><div class="week-meta">${w.range}</div></div><div style="display:flex;align-items:center;gap:8px"><span class="week-badge ${badgeClass}">${badgeText}</span><span class="week-arrow">▶</span></div></div><div class="week-body" id="wb${wi}"></div>`;
+    const body=card.querySelector('.week-body');
+    w.days.forEach(d=>{
+      const item=state.items[d.date]||{checked:false};
+      const dayCard=document.createElement('div');
+      dayCard.className='day-card'+(item.checked?' checked':'')+(d.rest?' rest':'');
+      let exHtml='';
+      if(item.exercise){
+        const ex=item.exercise;
+        const parts=[];
+        if(ex.distance)parts.push(ex.distance+'km');
+        if(ex.duration)parts.push(ex.duration);
+        if(ex.pace)parts.push(ex.pace);
+        if(ex.hr)parts.push(ex.hr+'bpm');
+        if(ex.cadence)parts.push(ex.cadence+'spm');
+        exHtml=`<div class="day-exercise">${parts.join(' · ')}<span class="ex-edit-btn" onclick="event.stopPropagation();openEditModal('${d.date}')">编辑</span></div>`;
+      }
+      dayCard.innerHTML=`<div class="day-header"><div class="day-checkbox"></div><span class="day-name">${getWeekdayCN(d.date)}</span><span class="day-date" onclick="event.stopPropagation();openDateEditor('${d.date}')" title="点击修改日期">${d.date.slice(5).replace('-','/')}</span><span class="day-dist">${d.dist}</span></div><div class="day-content">${d.content}</div>${exHtml}`;
+      if(!d.rest){
+        dayCard.onclick=()=>toggleDay(d.date);
+      }
+      body.appendChild(dayCard);
+    });
+    container.appendChild(card);
+  });
+}
+
+// ====== Day Interaction ======
+function toggleDay(date){
+  const item=state.items[date]||{checked:false};
+  item.checked=!item.checked;
+  state.items[date]=item;
+  saveState();
+  renderAll();
+  if(item.checked){
+    const di=dateIndex[date];
+    if(di&&!di.rest){
+      showToast('已打卡：'+di.content.substring(0,20)+'...');
+      // Auto-open exercise data form — deferred to avoid DOM race with renderAll
+      setTimeout(()=>openEditModal(date), 50);
+    }
+  }
+}
+
+// ====== Exercise Edit ======
+function openEditModal(date){
+  editingDate=date;
+  const item=state.items[date]||{checked:true,exercise:{}};
+  if(!item.checked){item.checked=true;state.items[date]=item;saveState();}
+  const ex=item.exercise||{};
+  document.getElementById('editTitle').textContent='运动数据 · '+date;
+  document.getElementById('editDistance').value=ex.distance||'';
+  document.getElementById('editDuration').value=ex.duration||'';
+  document.getElementById('editPace').value=ex.pace||'';
+  document.getElementById('editHR').value=ex.hr||'';
+  document.getElementById('editCadence').value=ex.cadence||'';
+  document.getElementById('editNotes').value=ex.notes||'';
+  document.getElementById('editModal').style.display='flex';
+}
+function updatePace(){
+  const dist=parseFloat(document.getElementById('editDistance').value);
+  const dur=document.getElementById('editDuration').value;
+  document.getElementById('editPace').value=calcPace(dist,dur);
+}
+function calcPace(dist,dur){
+  if(!dist||!dur)return'';
+  const parts=dur.split(':');
+  let sec=0;
+  if(parts.length===2)sec=parseInt(parts[0])*60+parseInt(parts[1]);
+  else if(parts.length===3)sec=parseInt(parts[0])*3600+parseInt(parts[1])*60+parseInt(parts[2]);
+  if(sec===0||dist===0)return'';
+  const ps=sec/dist;
+  const m=Math.floor(ps/60);
+  const s=Math.round(ps%60);
+  return m+"'"+String(s).padStart(2,'0')+'"';
+}
+function saveExercise(){
+  if(!editingDate)return;
+  const item=state.items[editingDate]||{checked:true};
+  item.exercise={
+    distance:parseFloat(document.getElementById('editDistance').value)||0,
+    duration:document.getElementById('editDuration').value,
+    pace:document.getElementById('editPace').value,
+    hr:parseInt(document.getElementById('editHR').value)||0,
+    cadence:parseInt(document.getElementById('editCadence').value)||0,
+    notes:document.getElementById('editNotes').value
+  };
+  state.items[editingDate]=item;
+  saveState();
+  renderAll();
+  document.getElementById('editModal').style.display='none';
+  showToast('运动数据已保存');
+}
+
+// ====== Date Editor ======
+let dateEditing={oldDate:null,wi:null,di:null};
+function openDateEditor(date){
+  const idx=dateIndex[date];
+  if(!idx)return;
+  dateEditing={oldDate:date,wi:idx.wi,di:idx.di};
+  document.getElementById('dateModalInput').value=date;
+  document.getElementById('dateModalInfo').textContent='原日期：'+date+' '+getWeekdayCN(date);
+  updateDatePreview();
+  document.getElementById('dateModal').style.display='flex';
+}
+function updateDatePreview(){
+  const newDate=document.getElementById('dateModalInput').value;
+  if(newDate)document.getElementById('dateModalPreview').textContent='新星期：'+getWeekdayCN(newDate);
+  else document.getElementById('dateModalPreview').textContent='';
+}
+function closeDateEditor(){
+  document.getElementById('dateModal').style.display='none';
+  dateEditing={oldDate:null,wi:null,di:null};
+}
+function saveDateChange(){
+  const newDate=document.getElementById('dateModalInput').value;
+  if(!newDate||!dateEditing.oldDate||newDate===dateEditing.oldDate){closeDateEditor();return;}
+  const {wi,di,oldDate}=dateEditing;
+  // Migrate state from old date key to new
+  if(state.items[oldDate]){
+    state.items[newDate]=state.items[oldDate];
+    delete state.items[oldDate];
+  }
+  // Persist override so it survives refresh
+  if(!state.weekOverrides)state.weekOverrides={};
+  state.weekOverrides[wi+'-'+di]=newDate;
+  // Update plan (for current session display)
+  weeks[wi].days[di].date=newDate;
+  weeks[wi].days[di].d=getWeekdayCN(newDate);
+  updateWeekRange(weeks[wi]);
+  rebuildIndex();
+  saveState();
+  renderAll();
+  closeDateEditor();
+  showToast('日期已更新为 '+newDate+' '+getWeekdayCN(newDate));
+}
+document.getElementById('dateModalInput').addEventListener('input',updateDatePreview);
+
+// ====== Backup ======
+function toggleBackupMenu(){document.getElementById('backupMenu').classList.toggle('show');}
+function exportData(){
+  const blob=new Blob([JSON.stringify(state,null,2)],{type:'application/json'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob);
+  a.download='半马训练备份_'+new Date().toISOString().slice(0,10)+'.json';
+  a.click();
+  showToast('备份已导出');
+}
+function importData(file){
+  if(!file)return;
+  const reader=new FileReader();
+  reader.onload=()=>{
+    try{
+      const data=JSON.parse(reader.result);
+      if(data.items){
+        state.items=data.items;
+        if(data.lastModified)state.lastModified=data.lastModified;
+        if(data.weekOverrides)state.weekOverrides=data.weekOverrides;
+        // Apply overrides and rebuild index
+        resetWeeksToOriginal();
+        applyWeekOverrides();
+        rebuildIndex();
+        saveState();
+        renderAll();
+        showToast('数据已导入');
+      }
+    }catch(e){showToast('文件格式错误');}
+  };
+  reader.readAsText(file);
+  document.getElementById('importInput').value='';
+}
+
+// ====== Utils ======
+// ====== Reset ======
+function showResetConfirm(){
+  document.getElementById('resetModal').style.display='flex';
+  document.getElementById('resetInput').value='';
+  document.getElementById('resetBtn').disabled=true;
+}
+function closeResetModal(){
+  document.getElementById('resetModal').style.display='none';
+}
+function doReset(){
+  if(document.getElementById('resetInput').value!=='确认重置')return;
+  state.items={};
+  state.weekOverrides={};
+  resetWeeksToOriginal();
+  rebuildIndex();
+  saveState();
+  renderAll();
+  closeResetModal();
+  showToast('所有打卡数据已重置');
+}
+
+function showToast(msg){
+  const t=document.createElement('div');
+  t.className='toast';
+  t.textContent=msg;
+  document.body.appendChild(t);
+  setTimeout(()=>t.classList.add('show'),10);
+  setTimeout(()=>{t.classList.remove('show');setTimeout(()=>t.remove(),300);},2500);
+}
+
+// ====== Init ======
+async function init(){
+  // Auto-detect sync server
+  if(window.location.hostname==='localhost'||window.location.hostname.startsWith('192.168.')||window.location.hostname.startsWith('10.')){
+    SYNC_SERVER='http://'+window.location.hostname+':'+window.location.port;
+  }
+  // 1. Reset weeks to original dates (clean base)
+  resetWeeksToOriginal();
+  // 2. Load state from storage
+  await loadState();
+  // 3. Apply persisted date overrides to weeks
+  applyWeekOverrides();
+  // 4. Rebuild dateIndex with overridden dates
+  rebuildIndex();
+  // 5. Clean orphan keys (dates not in plan or rest days, now that dateIndex is correct)
+  let cleaned=false;
+  for(const date of Object.keys(state.items)){
+    const di=dateIndex[date];
+    if(!di||di.rest){
+      delete state.items[date];
+      cleaned=true;
+    }
+  }
+  if(cleaned)state.lastModified=Date.now();
+  // 6. If no local data, try IMA restore
+  if(Object.keys(state.items).length===0&&SYNC_SERVER){
+    const cloudData=await loadFromServer();
+    if(cloudData&&cloudData.items){
+      state.items=cloudData.items;
+      state.lastModified=cloudData.lastModified||Date.now();
+      // Clean orphan keys from cloud too
+      for(const date of Object.keys(state.items)){
+        const di=dateIndex[date];
+        if(!di||di.rest)delete state.items[date];
+      }
+    }
+  }
+  // 7. Save cleaned state
+  saveState();
+  // 8. Render
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>

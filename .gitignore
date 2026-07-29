@@ -1,0 +1,9 @@
+node_modules/
+deploy_output.txt
+deploy_result.txt
+deploy.py
+.workbuddy/
+.vscode/
+*.log
+sync_server.js
+serve.js
