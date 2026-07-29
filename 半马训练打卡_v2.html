@@ -591,7 +591,7 @@ function renderWeeks(){
   // Auto-scroll to active week so completed weeks don't block it
   setTimeout(()=>{
     const active=container.querySelector('.week-card.active-week');
-    if(active)active.scrollIntoView({behavior:'smooth',block:'start'});
+    if(active)active.scrollIntoView({behavior:'smooth',block:'center'});
   },100);
 }
 
@@ -814,45 +814,49 @@ function collectTrainingData(){
 
 function localAnalysis(data){
   if(data.totalRuns===0){
-    return{text:'还没有打卡记录。\n完成第一次训练打卡并填写运动数据后，这里会自动生成训练分析。'};
+    return{text:'还没有打卡记录。完成第一次训练打卡并填写运动数据后，这里会自动生成训练分析。'};
   }
-  const lines=[];
-  lines.push('训练总览：已完成 '+data.totalRuns+' 次训练，累计 '+data.totalDistance.toFixed(1)+' km');
-  if(data.totalDuration>0){
-    const h=Math.floor(data.totalDuration/3600);
-    const m=Math.round((data.totalDuration%3600)/60);
-    lines.push('累计训练时长：'+(h>0?h+'小时':'')+m+'分钟');
-  }
+  // 精简数据概览（一行）
+  const summary=[];
+  summary.push('累计 '+data.totalRuns+' 次 / '+data.totalDistance.toFixed(1)+'km');
   if(data.paces.length>0){
     const avgPaceSec=data.paces.reduce((a,b)=>a+b.sec,0)/data.paces.length;
     const m=Math.floor(avgPaceSec/60);
     const s=Math.round(avgPaceSec%60);
-    lines.push('平均配速：'+m+"'"+String(s).padStart(2,'0')+'"（'+data.paces.length+'次记录）');
-    if(data.paces.length>=2){
-      const recent=data.paces.slice(-3);
-      const earlier=data.paces.slice(0,-3);
-      if(earlier.length>0){
-        const recentAvg=recent.reduce((a,b)=>a+b.sec,0)/recent.length;
-        const earlierAvg=earlier.reduce((a,b)=>a+b.sec,0)/earlier.length;
-        const diff=earlierAvg-recentAvg;
-        if(diff>5)lines.push('配速趋势：近期比之前快 '+Math.round(diff)+'秒/km，进步明显');
-        else if(diff<-5)lines.push('配速趋势：近期比之前慢 '+Math.round(-diff)+'秒/km，注意控制强度');
-      }
-    }
+    summary.push('配速 '+m+"'"+String(s).padStart(2,'0')+'"');
   }
   if(data.heartRates.length>0){
     const avgHR=Math.round(data.heartRates.reduce((a,b)=>a+b,0)/data.heartRates.length);
-    lines.push('平均心率：'+avgHR+' bpm（'+data.heartRates.length+'次记录）');
-    if(avgHR>160)lines.push('心率偏高：建议增加低强度有氧（心率<150）的比例，巩固有氧基础');
-    else if(avgHR>155)lines.push('心率适中偏快：注意区分阈值跑和轻松跑的心率区间');
-    else lines.push('心率控制良好：有氧基础训练充分');
+    summary.push('心率 '+avgHR);
   }
   if(data.cadences.length>0){
     const avgCad=Math.round(data.cadences.reduce((a,b)=>a+b,0)/data.cadences.length);
-    lines.push('平均步频：'+avgCad+' spm（'+data.cadences.length+'次记录）');
-    if(avgCad<170)lines.push('步频偏低：建议多做步频训练（目标180+），减少触地时间');
-    else if(avgCad<175)lines.push('步频尚可：继续步频训练，向180靠拢');
-    else lines.push('步频良好：接近理想值180');
+    summary.push('步频 '+avgCad);
+  }
+  const lines=[summary.join(' · ')];
+
+  // 核心问题/建议（最多2条，按优先级）
+  const alerts=[];
+  if(data.cadences.length>0){
+    const avgCad=Math.round(data.cadences.reduce((a,b)=>a+b,0)/data.cadences.length);
+    if(avgCad<170)alerts.push('步频偏低，建议多做步频训练（目标180+）');
+    else if(avgCad<175)alerts.push('步频尚可，继续向180靠拢');
+  }
+  if(data.heartRates.length>0){
+    const avgHR=Math.round(data.heartRates.reduce((a,b)=>a+b,0)/data.heartRates.length);
+    if(avgHR>160)alerts.push('心率偏高，增加低强度有氧（心率<150）巩固基础');
+    else if(avgHR>155)alerts.push('心率适中偏快，注意区分阈值跑和轻松跑区间');
+  }
+  if(data.paces.length>=2){
+    const recent=data.paces.slice(-3);
+    const earlier=data.paces.slice(0,-3);
+    if(earlier.length>0){
+      const recentAvg=recent.reduce((a,b)=>a+b.sec,0)/recent.length;
+      const earlierAvg=earlier.reduce((a,b)=>a+b.sec,0)/earlier.length;
+      const diff=earlierAvg-recentAvg;
+      if(diff>5)alerts.push('近期配速比之前快 '+Math.round(diff)+'秒/km');
+      else if(diff<-5)alerts.push('近期配速比之前慢 '+Math.round(-diff)+'秒/km，注意控制强度');
+    }
   }
   const completedWeeks=data.weeklyData.filter(w=>w.runs>0);
   if(completedWeeks.length>=2){
@@ -860,22 +864,29 @@ function localAnalysis(data){
     const prev=completedWeeks[completedWeeks.length-2];
     if(prev.distance>0&&last.distance>0){
       const change=((last.distance/prev.distance-1)*100);
-      if(change>15)lines.push('第'+last.week+'周跑量：'+last.distance.toFixed(1)+'km（+'+change.toFixed(0)+'%），增量较大，注意预防伤病');
-      else if(change>0)lines.push('第'+last.week+'周跑量：'+last.distance.toFixed(1)+'km（+'+change.toFixed(0)+'%），增量合理');
-      else if(change<0)lines.push('第'+last.week+'周跑量：'+last.distance.toFixed(1)+'km（'+change.toFixed(0)+'%），适当减量有利于恢复');
+      if(change>15)alerts.push('本周跑量增量较大（+'+change.toFixed(0)+'%），注意预防伤病');
+      else if(change<-30)alerts.push('本周跑量下降 '+(-change).toFixed(0)+'%，适当减量利于恢复');
     }
   }
+  if(alerts.length>0){
+    lines.push('');
+    lines.push('注意：'+alerts.slice(0,2).join('；'));
+  }
+
+  // 当前阶段方向
   const activeWeek=getActiveWeekIndex();
   const currentPhase=weeks[activeWeek]?weeks[activeWeek].phase:'';
   if(currentPhase){
-    lines.push('\n当前阶段：'+currentPhase);
-    if(currentPhase==='恢复周')lines.push('建议：以低强度恢复为主，不要急于提速');
-    else if(currentPhase==='有氧底座')lines.push('建议：重点积累有氧里程，心率控制在155以下');
-    else if(currentPhase==='阈值突破')lines.push('建议：阈值跑注意心率区间160-165，长距离保持稳速');
-    else if(currentPhase==='阈值测试')lines.push('建议：10km测试用于评估当前能力，记录成绩作为参考');
-    else if(currentPhase==='半马专项')lines.push('建议：长距离训练模拟比赛配速，注意补给练习');
-    else if(currentPhase==='减量期')lines.push('建议：减量保持强度，减少跑量，积蓄体能');
-    else if(currentPhase==='比赛周')lines.push('建议：比赛日前充分休息，保持肌肉活性即可');
+    let phaseAdvice='';
+    if(currentPhase==='恢复周')phaseAdvice='低强度恢复为主，不要急于提速';
+    else if(currentPhase==='有氧底座')phaseAdvice='积累有氧里程，心率控制在155以下';
+    else if(currentPhase==='阈值突破')phaseAdvice='阈值跑心率160-165，长距离保持稳速';
+    else if(currentPhase==='阈值测试')phaseAdvice='10km测试评估能力，记录成绩作为参考';
+    else if(currentPhase==='半马专项')phaseAdvice='长距离模拟比赛配速，注意补给练习';
+    else if(currentPhase==='减量期')phaseAdvice='减量保持强度，减少跑量积蓄体能';
+    else if(currentPhase==='比赛周')phaseAdvice='赛前充分休息，保持肌肉活性即可';
+    lines.push('');
+    lines.push('阶段：'+currentPhase+' — '+phaseAdvice);
   }
   return{text:lines.join('\n')};
 }
