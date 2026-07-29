@@ -492,33 +492,35 @@ function calculateRecovery(){
 }
 
 function updateRecoveryCountdown(){
-  const row=document.getElementById('recoveryRow');
-  const timer=document.getElementById('recoveryTimer');
-  if(!row||!timer)return;
-  const recoveryUntil=calculateRecovery();
-  if(!recoveryUntil){
-    row.style.display='none';
-    if(recoveryTimerId){clearInterval(recoveryTimerId);recoveryTimerId=null;}
-    return;
-  }
-  row.style.display='flex';
-  if(recoveryTimerId)clearInterval(recoveryTimerId);
-  const tick=()=>{
-    const remaining=recoveryUntil.getTime()-Date.now();
-    if(remaining<=0){
-      timer.textContent='已恢复';
-      timer.className='recovery-timer done';
+  try{
+    const row=document.getElementById('recoveryRow');
+    const timer=document.getElementById('recoveryTimer');
+    if(!row||!timer)return;
+    const recoveryUntil=calculateRecovery();
+    if(!recoveryUntil){
+      row.style.display='none';
       if(recoveryTimerId){clearInterval(recoveryTimerId);recoveryTimerId=null;}
       return;
     }
-    const h=Math.floor(remaining/3600000);
-    const m=Math.floor((remaining%3600000)/60000);
-    const s=Math.floor((remaining%60000)/1000);
-    timer.textContent=h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
-    timer.className='recovery-timer';
-  };
-  tick();
-  recoveryTimerId=setInterval(tick,1000);
+    row.style.display='flex';
+    if(recoveryTimerId)clearInterval(recoveryTimerId);
+    const tick=()=>{
+      const remaining=recoveryUntil.getTime()-Date.now();
+      if(remaining<=0){
+        timer.textContent='已恢复';
+        timer.className='recovery-timer done';
+        if(recoveryTimerId){clearInterval(recoveryTimerId);recoveryTimerId=null;}
+        return;
+      }
+      const h=Math.floor(remaining/3600000);
+      const m=Math.floor((remaining%3600000)/60000);
+      const s=Math.floor((remaining%60000)/1000);
+      timer.textContent=h+'h '+String(m).padStart(2,'0')+'m '+String(s).padStart(2,'0')+'s';
+      timer.className='recovery-timer';
+    };
+    tick();
+    recoveryTimerId=setInterval(tick,1000);
+  }catch(e){console.error('Recovery countdown error:',e);}
 }
 
 function renderProgress(){
@@ -589,10 +591,14 @@ function renderWeeks(){
     });
     container.appendChild(card);
   });
-  // Auto-scroll to active week so completed weeks don't block it
+  // Auto-scroll to active week only if it's outside viewport
   setTimeout(()=>{
     const active=container.querySelector('.week-card.active-week');
-    if(active)active.scrollIntoView({behavior:'smooth',block:'center'});
+    if(!active)return;
+    const rect=active.getBoundingClientRect();
+    const vh=window.innerHeight;
+    if(rect.top>=0&&rect.bottom<=vh)return; // already fully visible
+    active.scrollIntoView({behavior:'smooth',block:'start'});
   },100);
 }
 
@@ -1025,6 +1031,7 @@ async function init(){
   }
   saveState();
   renderAll();
+  setTimeout(updateRecoveryCountdown,300);
 }
 init();
 </script>
