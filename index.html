@@ -64,13 +64,19 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 .ai-source-badge.local{background:#2a2a1a;color:#ffb74d}
 .ai-source-badge.api{background:#1a2a1a;color:#66bb6a}
 /* === Week / Day Cards === */
-.week-card{background:#1a1a1a;border-radius:10px;margin-bottom:10px;overflow:hidden;transition:border-color .2s}
+.week-card{background:#1a1a1a;border-radius:10px;margin-bottom:10px;overflow:hidden;transition:all .3s}
 .week-card.active-week{border:1px solid #1e3a4a}
+.week-card.completed-collapsed{margin-bottom:3px;opacity:.45;border-left:3px solid #1b3a1b}
+.week-card.completed-collapsed .week-header{padding:6px 12px}
+.week-card.completed-collapsed .week-title{font-size:12px;color:#777}
+.week-card.completed-collapsed .week-meta{display:none}
+.week-card.completed-collapsed .week-badge.done{background:#1a2a1a;color:#4a7a4a;font-size:10px}
+.week-card.completed-collapsed:hover{opacity:.7}
 .week-header{display:flex;justify-content:space-between;align-items:center;padding:12px 14px;cursor:pointer;user-select:none;-webkit-tap-highlight-color:transparent}
 .week-header:active{background:#222}
-.week-title{font-size:14px;font-weight:600;color:#fff}
-.week-meta{font-size:11px;color:#666;margin-top:2px}
-.week-badge{font-size:11px;padding:2px 8px;border-radius:8px;white-space:nowrap}
+.week-title{font-size:14px;font-weight:600;color:#fff;transition:font-size .2s,color .2s}
+.week-meta{font-size:11px;color:#666;margin-top:2px;transition:opacity .2s}
+.week-badge{font-size:11px;padding:2px 8px;border-radius:8px;white-space:nowrap;transition:all .2s}
 .week-badge.done{background:#1b3a1b;color:#66bb6a}
 .week-badge.partial{background:#333;color:#ffb74d}
 .week-badge.pending{background:#222;color:#555}
@@ -553,8 +559,9 @@ function renderWeeks(){
     const badgeClass=done===total?'done':(done>0?'partial':'pending');
     const badgeText=done+'/'+total;
     const isActive=wi===activeWeek;
+    const isCompleted=done===total&&!isActive;
     const card=document.createElement('div');
-    card.className='week-card'+(isActive?' open active-week':'');
+    card.className='week-card'+(isActive?' open active-week':'')+(isCompleted?' completed-collapsed':'');
     card.innerHTML=`<div class="week-header" onclick="this.parentElement.classList.toggle('open');this.parentElement.classList.toggle('active-week')"><div><div class="week-title">第${w.n}周 · ${w.phase}</div><div class="week-meta">${w.range}</div></div><div style="display:flex;align-items:center;gap:8px"><span class="week-badge ${badgeClass}">${badgeText}</span><span class="week-arrow">▶</span></div></div><div class="week-body" id="wb${wi}"></div>`;
     const body=card.querySelector('.week-body');
     w.days.forEach(d=>{
@@ -582,6 +589,11 @@ function renderWeeks(){
     });
     container.appendChild(card);
   });
+  // Auto-scroll to active week so completed weeks don't block it
+  setTimeout(()=>{
+    const active=container.querySelector('.week-card.active-week');
+    if(active)active.scrollIntoView({behavior:'smooth',block:'start'});
+  },100);
 }
 
 // ====== Day Interaction ======
