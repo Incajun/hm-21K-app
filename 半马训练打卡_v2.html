@@ -475,7 +475,12 @@ function calculateRecovery(){
   }
   if(!latestEx)return null;
   const hours=getRecoveryHours(latestEx);
-  const startTime=latestTime||Date.now();
+  let startTime=latestTime;
+  if(!startTime){
+    startTime=Date.now();
+    latestEx.exerciseTime=startTime;
+    saveState();
+  }
   return new Date(startTime+hours*3600000);
 }
 
@@ -645,6 +650,7 @@ function calcPace(dist,dur){
 function saveExercise(){
   if(!editingDate)return;
   const item=state.items[editingDate]||{checked:true};
+  const prevEx=(state.items[editingDate]&&state.items[editingDate].exercise)||{};
   item.exercise={
     distance:parseFloat(document.getElementById('editDistance').value)||0,
     duration:document.getElementById('editDuration').value,
@@ -652,7 +658,7 @@ function saveExercise(){
     hr:parseInt(document.getElementById('editHR').value)||0,
     cadence:parseInt(document.getElementById('editCadence').value)||0,
     notes:document.getElementById('editNotes').value,
-    exerciseTime:Date.now()
+    exerciseTime:prevEx.exerciseTime||Date.now()
   };
   state.items[editingDate]=item;
   saveState();
