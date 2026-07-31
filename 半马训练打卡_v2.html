@@ -138,7 +138,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 <div class="progress-wrap">
 <div class="progress-label"><span>训练进度</span><span><strong id="doneCount">0</strong>/<span id="totalCount">0</span></span></div>
 <div class="progress-bar"><div class="progress-fill" id="progressFill" style="width:0%"></div></div>
-<div class="progress-recovery" id="recoveryRow"><span class="recovery-label">恢复倒计时</span><span class="recovery-timer" id="recoveryTimer">--</span></div>
+<div class="progress-recovery" id="recoveryRow" onclick="openRecoveryModal()" style="cursor:pointer"><span class="recovery-label">恢复倒计时</span><span class="recovery-timer" id="recoveryTimer">--</span></div>
 </div>
 <!-- AI Analysis Section -->
 <div class="ai-wrap" id="aiWrap">
@@ -164,85 +164,86 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei
 <div class="modal" id="editModal" style="display:none"><div class="modal-box"><div class="modal-title" id="editTitle">运动数据</div><div class="edit-form"><label>距离 (km)<input type="number" id="editDistance" step="0.01" oninput="updatePace()"></label><label>用时 (如 25:30)<input type="text" id="editDuration" oninput="updatePace()"></label><label>配速 (自动计算)<input type="text" id="editPace" readonly></label><label>心率 (bpm)<input type="number" id="editHR"></label><label>步频 (spm)<input type="number" id="editCadence"></label><label>备注<textarea id="editNotes" rows="2"></textarea></label></div><div class="modal-actions"><button class="btn-primary" onclick="saveExercise()">保存</button><button class="btn-secondary" onclick="document.getElementById('editModal').style.display='none'">取消</button></div></div></div>
 <div class="modal" id="dateModal" style="display:none"><div class="modal-box"><div class="modal-title">修改日期</div><div style="margin-bottom:8px;font-size:13px;color:#aaa" id="dateModalInfo"></div><input type="date" id="dateModalInput" style="width:100%;padding:10px;border-radius:6px;background:#1a1a2e;border:1px solid #555;color:#ddd;font-size:14px"><div style="margin-top:8px;font-size:13px;color:#8be9fd" id="dateModalPreview"></div><div class="modal-actions"><button class="btn-primary" onclick="saveDateChange()">保存</button><button class="btn-secondary" onclick="closeDateEditor()">取消</button></div></div></div>
 <div class="modal" id="resetModal" style="display:none"><div class="modal-box"><div class="modal-title" style="color:#ef5350">重置所有打卡数据</div><div style="margin-bottom:10px;font-size:13px;color:#aaa">此操作将清除所有打卡记录和运动数据。<br><strong style="color:#ef5350">不可撤销！</strong></div><div style="margin-bottom:8px;font-size:12px;color:#888">请输入 <code style="color:#ef5350;background:#2a1a1a;padding:2px 6px;border-radius:3px">确认重置</code> 后点击按钮：</div><input type="text" id="resetInput" placeholder="输入 确认重置" style="width:100%;padding:8px;border-radius:6px;background:#1a1a2e;border:1px solid #333;color:#ddd;font-size:13px;margin-bottom:12px" oninput="document.getElementById('resetBtn').disabled=this.value!=='确认重置'"><div class="modal-actions"><button class="btn-danger" id="resetBtn" onclick="doReset()" disabled>确认重置</button><button class="btn-secondary" onclick="closeResetModal()">取消</button></div></div></div>
+<div class="modal" id="recoveryModal" style="display:none"><div class="modal-box"><div class="modal-title">调整恢复时间</div><div style="margin-bottom:10px;font-size:13px;color:#aaa"><div>当前剩余: <span id="recoveryCurrent" style="color:#ffb74d">--</span></div><div id="recoveryAutoInfo" style="margin-top:4px">自动计算恢复时长: -- 小时</div><div id="recoveryOverrideInfo" style="margin-top:4px;color:#66bb6a;display:none">当前使用手动设置</div></div><label style="font-size:12px;color:#888;display:flex;flex-direction:column;gap:4px">自定义恢复时长 (小时，留空恢复自动)<input type="number" id="recoveryInput" step="0.5" min="1" max="72" placeholder="如 24" style="background:#0f0f0f;border:1px solid #333;border-radius:6px;padding:8px 10px;color:#e0e0e0;font-size:14px;font-family:inherit;outline:none"></label><div style="margin-top:8px;font-size:12px;color:#666">手动设置的恢复时长将覆盖自动计算值</div><div class="modal-actions"><button class="btn-primary" onclick="applyRecoveryOverride()">确认修改</button><button class="btn-secondary" onclick="clearRecoveryOverride()">恢复自动</button><button class="btn-secondary" onclick="document.getElementById('recoveryModal').style.display='none'">取消</button></div></div></div>
 <script>
 // ====== Training Plan ======
 const weeks=[
 {n:1,phase:"恢复周",range:"07/22-07/28",days:[
-{d:"周四",date:"2026-07-23",content:"轻松跑 3km，配速7'30-8'00，心率<150",dist:"3km",rest:false},
-{d:"周六",date:"2026-07-25",content:"步频训练：1km步频180走2min×3组 + 轻松跑2km",dist:"5km",rest:false},
-{d:"周日",date:"2026-07-26",content:"轻松跑 4km，配速7'30，心率<150",dist:"4km",rest:false},
+{d:"周四",date:"2026-07-23",content:"轻松跑 3km，配速7'30-8'00，心率<150（鼻呼吸/能完整对话）",dist:"3km",rest:false},
+{d:"周六",date:"2026-07-25",content:"步频训练：1km@步频180+慢走2min恢复 ×3组 + 轻松跑2km",dist:"5km",rest:false},
+{d:"周日",date:"2026-07-26",content:"轻松跑 4km，配速7'30，心率<150（鼻呼吸/能完整对话）",dist:"4km",rest:false},
 {d:"周一",date:"2026-07-27",content:"休息（可做拉伸/力量训练）",dist:"—",rest:true}
 ]},
 {n:2,phase:"有氧底座",range:"07/29-08/04",days:[
-{d:"周四",date:"2026-07-30",content:"轻松跑 4km，配速7'15-7'30，心率<155",dist:"4km",rest:false},
-{d:"周六",date:"2026-08-01",content:"步频训练：1km步频180走2min×4组",dist:"4km",rest:false},
-{d:"周日",date:"2026-08-02",content:"轻松跑 6km，配速7'15，心率<155",dist:"6km",rest:false},
+{d:"周四",date:"2026-07-30",content:"轻松跑 4km，配速7'15-7'30，心率<155（鼻呼吸/能完整对话）",dist:"4km",rest:false},
+{d:"周六",date:"2026-08-01",content:"步频训练：1km@步频180+慢走2min恢复 ×4组",dist:"4km",rest:false},
+{d:"周日",date:"2026-08-02",content:"轻松跑 6km，配速7'15，心率<155（鼻呼吸/能完整对话）",dist:"6km",rest:false},
 {d:"周一",date:"2026-08-03",content:"短距离轻松跑 4km，配速7'30",dist:"4km",rest:false}
 ]},
 {n:3,phase:"有氧底座",range:"08/05-08/11",days:[
-{d:"周四",date:"2026-08-06",content:"轻松跑 5km，配速7'15，心率<155",dist:"5km",rest:false},
-{d:"周六",date:"2026-08-08",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
-{d:"周日",date:"2026-08-09",content:"长距离慢跑 7km，配速7'00-7'15，心率<155",dist:"7km",rest:false},
+{d:"周四",date:"2026-08-06",content:"轻松跑 5km，配速7'15，心率<155（鼻呼吸/能完整对话）",dist:"5km",rest:false},
+{d:"周六",date:"2026-08-08",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-08-09",content:"长距离慢跑 7km，配速7'00-7'15，心率<155（鼻呼吸/能完整对话）",dist:"7km",rest:false},
 {d:"周一",date:"2026-08-10",content:"轻松跑 4km，配速7'30",dist:"4km",rest:false}
 ]},
 {n:4,phase:"有氧底座",range:"08/12-08/18",days:[
-{d:"周四",date:"2026-08-13",content:"轻松跑 6km，配速7'00-7'15，心率<155",dist:"6km",rest:false},
-{d:"周六",date:"2026-08-15",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
-{d:"周日",date:"2026-08-16",content:"长距离慢跑 8km，配速7'00，心率<158",dist:"8km",rest:false},
+{d:"周四",date:"2026-08-13",content:"轻松跑 6km，配速7'00-7'15，心率<155（鼻呼吸/能完整对话）",dist:"6km",rest:false},
+{d:"周六",date:"2026-08-15",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-08-16",content:"长距离慢跑 8km，配速7'00，心率<158（鼻呼吸/能完整对话）",dist:"8km",rest:false},
 {d:"周一",date:"2026-08-17",content:"轻松跑 5km，配速7'30",dist:"5km",rest:false}
 ]},
 {n:5,phase:"阈值突破",range:"08/19-08/25",days:[
-{d:"周四",date:"2026-08-20",content:"阈值跑：2km热身 + 3km阈值6'30-6'40心率160-165 + 2km放松",dist:"7km",rest:false},
-{d:"周六",date:"2026-08-22",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
-{d:"周日",date:"2026-08-23",content:"长距离慢跑 10km，配速7'00-7'15，心率<158",dist:"10km",rest:false},
+{d:"周四",date:"2026-08-20",content:"阈值跑：2km热身 + 3km阈值6'10-6'20心率160-165 + 2km放松",dist:"7km",rest:false},
+{d:"周六",date:"2026-08-22",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-08-23",content:"长距离慢跑 10km，配速7'00-7'15，心率<158（鼻呼吸/能完整对话）",dist:"10km",rest:false},
 {d:"周一",date:"2026-08-24",content:"轻松跑 5km，配速7'30",dist:"5km",rest:false}
 ]},
 {n:6,phase:"阈值突破",range:"08/26-09/01",days:[
-{d:"周四",date:"2026-08-27",content:"阈值跑：2km热身 + 4km阈值6'25-6'35心率160-165 + 2km放松",dist:"8km",rest:false},
-{d:"周六",date:"2026-08-29",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
-{d:"周日",date:"2026-08-30",content:"长距离慢跑 12km，配速7'00，心率<160",dist:"12km",rest:false},
+{d:"周四",date:"2026-08-27",content:"阈值跑：2km热身 + 4km阈值6'05-6'15心率160-165 + 2km放松",dist:"8km",rest:false},
+{d:"周六",date:"2026-08-29",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-08-30",content:"长距离慢跑 12km，配速7'00，心率<160（鼻呼吸/能完整对话）",dist:"12km",rest:false},
 {d:"周一",date:"2026-08-31",content:"轻松跑 4km，配速7'30",dist:"4km",rest:false}
 ]},
 {n:7,phase:"阈值突破",range:"09/02-09/08",days:[
-{d:"周四",date:"2026-09-03",content:"阈值跑：2km热身 + 5km阈值6'20-6'30心率160-165 + 2km放松",dist:"9km",rest:false},
-{d:"周六",date:"2026-09-05",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
-{d:"周日",date:"2026-09-06",content:"长距离慢跑 13km，配速7'00-7'15，心率<160",dist:"13km",rest:false},
+{d:"周四",date:"2026-09-03",content:"阈值跑：2km热身 + 5km阈值6'00-6'10心率160-165 + 2km放松",dist:"9km",rest:false},
+{d:"周六",date:"2026-09-05",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-09-06",content:"长距离慢跑 13km，配速7'00-7'15，心率<160（鼻呼吸/能完整对话）",dist:"13km",rest:false},
 {d:"周一",date:"2026-09-07",content:"轻松跑 3km，配速7'30",dist:"3km",rest:false}
 ]},
 {n:8,phase:"阈值测试",range:"09/09-09/15",days:[
-{d:"周四",date:"2026-09-10",content:"阈值跑(轻量)：2km热身 + 3km阈值6'20 + 2km放松",dist:"7km",rest:false},
-{d:"周六",date:"2026-09-12",content:"步频训练：1km步频180走2min×4组",dist:"4km",rest:false},
-{d:"周日",date:"2026-09-13",content:"10KM测试跑！配速6'40起步，后5km看体感提速",dist:"10km",rest:false},
+{d:"周四",date:"2026-09-10",content:"阈值跑(轻量)：2km热身 + 3km阈值5'55-6'05 + 2km放松",dist:"7km",rest:false},
+{d:"周六",date:"2026-09-12",content:"步频训练：1km@步频180+慢走2min恢复 ×4组",dist:"4km",rest:false},
+{d:"周日",date:"2026-09-13",content:"10KM测试跑！配速6'15起步，后5km看体感提速",dist:"10km",rest:false},
 {d:"周一",date:"2026-09-14",content:"轻松恢复跑 3km，配速7'30+",dist:"3km",rest:false}
 ]},
 {n:9,phase:"半马专项",range:"09/16-09/22",days:[
-{d:"周四",date:"2026-09-17",content:"阈值跑：2km热身 + 5km阈值6'20-6'30 + 2km放松",dist:"9km",rest:false},
-{d:"周六",date:"2026-09-19",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
-{d:"周日",date:"2026-09-20",content:"长距离慢跑 14km，配速7'00，心率<160",dist:"14km",rest:false},
+{d:"周四",date:"2026-09-17",content:"阈值跑：2km热身 + 5km阈值5'55-6'05 + 2km放松",dist:"9km",rest:false},
+{d:"周六",date:"2026-09-19",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-09-20",content:"长距离慢跑 14km，配速7'00，心率<160（鼻呼吸/能完整对话）",dist:"14km",rest:false},
 {d:"周一",date:"2026-09-21",content:"轻松跑 4km，配速7'30",dist:"4km",rest:false}
 ]},
 {n:10,phase:"半马专项",range:"09/23-09/29",days:[
-{d:"周四",date:"2026-09-24",content:"阈值跑：2km热身 + 6km阈值6'15-6'25心率160-165 + 2km放松",dist:"10km",rest:false},
-{d:"周六",date:"2026-09-26",content:"步频训练：1km步频180走2min×4组 + 轻松跑3km",dist:"7km",rest:false},
-{d:"周日",date:"2026-09-27",content:"长距离慢跑 16km，配速7'00-7'15，心率<160",dist:"16km",rest:false},
+{d:"周四",date:"2026-09-24",content:"阈值跑：2km热身 + 6km阈值5'50-6'00心率160-165 + 2km放松",dist:"10km",rest:false},
+{d:"周六",date:"2026-09-26",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑3km",dist:"7km",rest:false},
+{d:"周日",date:"2026-09-27",content:"长距离慢跑 16km，配速7'00-7'15，心率<160（鼻呼吸/能完整对话）",dist:"16km",rest:false},
 {d:"周一",date:"2026-09-28",content:"轻松跑 3km，配速7'30",dist:"3km",rest:false}
 ]},
 {n:11,phase:"半马专项",range:"09/30-10/06",days:[
-{d:"周四",date:"2026-10-01",content:"混合跑：2km热身+4km阈值6'15-6'25+3km半马配速6'40+2km放松",dist:"11km",rest:false},
-{d:"周六",date:"2026-10-03",content:"步频训练：1km步频180走2min×4组 + 轻松跑2km",dist:"6km",rest:false},
-{d:"周日",date:"2026-10-04",content:"最长距离训练 18km！前10km配速7'10压节奏，后8km提速到6'50-7'00",dist:"18km",rest:false},
+{d:"周四",date:"2026-10-01",content:"混合跑：2km热身+4km阈值5'50-6'00+3km半马配速6'25+2km放松",dist:"11km",rest:false},
+{d:"周六",date:"2026-10-03",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑2km",dist:"6km",rest:false},
+{d:"周日",date:"2026-10-04",content:"最长距离训练 18km！前10km配速7'10压节奏，后8km提速到6'25-6'40",dist:"18km",rest:false},
 {d:"周一",date:"2026-10-05",content:"轻松恢复跑 2km",dist:"2km",rest:false}
 ]},
 {n:12,phase:"半马专项",range:"10/07-10/13",days:[
-{d:"周四",date:"2026-10-08",content:"阈值跑：2km热身 + 5km阈值6'20 + 2km放松",dist:"9km",rest:false},
-{d:"周六",date:"2026-10-10",content:"步频训练：1km步频180走2min×4组",dist:"4km",rest:false},
-{d:"周日",date:"2026-10-11",content:"LSR 15km（模拟比赛：前5km压7'10，后10km 6'50-7'00）",dist:"15km",rest:false},
+{d:"周四",date:"2026-10-08",content:"阈值跑：2km热身 + 5km阈值5'55-6'05 + 2km放松",dist:"9km",rest:false},
+{d:"周六",date:"2026-10-10",content:"步频训练：1km@步频180+慢走2min恢复 ×4组",dist:"4km",rest:false},
+{d:"周日",date:"2026-10-11",content:"LSR 15km（模拟比赛：前5km压7'10，后10km 6'25-6'40）",dist:"15km",rest:false},
 {d:"周一",date:"2026-10-12",content:"轻松跑 7km，配速7'30",dist:"7km",rest:false}
 ]},
 {n:13,phase:"减量期",range:"10/14-10/20",days:[
-{d:"周四",date:"2026-10-15",content:"阈值跑(轻量)：2km热身 + 3km阈值6'20 + 2km放松",dist:"7km",rest:false},
+{d:"周四",date:"2026-10-15",content:"阈值跑(轻量)：2km热身 + 3km阈值5'55-6'05 + 2km放松",dist:"7km",rest:false},
 {d:"周六",date:"2026-10-17",content:"轻松跑 6km，配速7'15，含2km步频175+",dist:"6km",rest:false},
-{d:"周日",date:"2026-10-18",content:"LSR 10km，配速7'10，最后2km提速到6'50",dist:"10km",rest:false},
+{d:"周日",date:"2026-10-18",content:"LSR 10km，配速7'10，最后2km提速到6'25",dist:"10km",rest:false},
 {d:"周一",date:"2026-10-19",content:"轻松跑 2km，配速7'30+",dist:"2km",rest:false}
 ]},
 {n:14,phase:"比赛周",range:"10/21-10/27",days:[
@@ -316,7 +317,7 @@ const DB_VERSION=1;
 const SYNC_SERVER='';
 
 // ====== State ======
-let state={items:{},lastModified:0};
+let state={items:{},lastModified:0,recoveryOverride:null};
 let editingDate=null;
 let recoveryTimerId=null;
 
@@ -382,11 +383,11 @@ async function loadFromServer(){
 
 // ====== Data persistence ======
 async function loadState(){
-  let bestData=null, bestModified=0, bestWeekOverrides=null;
+  let bestData=null, bestModified=0, bestWeekOverrides=null, bestRecoveryOverride=null;
   try{
     const data=await dbGet(STORE_NAME);
     if(data&&data.items&&Object.keys(data.items).length>0){
-      bestData=data.items; bestModified=data.lastModified||0; bestWeekOverrides=data.weekOverrides||null;
+      bestData=data.items; bestModified=data.lastModified||0; bestWeekOverrides=data.weekOverrides||null; bestRecoveryOverride=data.recoveryOverride||null;
       console.log('[DB] Loaded',Object.keys(bestData).length,'records from IndexedDB');
     }
   }catch(e){console.error('IndexedDB load error:',e);}
@@ -398,7 +399,7 @@ async function loadState(){
         const s=JSON.parse(raw);
         if(!s.items||Object.keys(s.items).length===0)continue;
         if(s.lastModified&&s.lastModified>bestModified){
-          bestData=s.items; bestModified=s.lastModified; bestWeekOverrides=s.weekOverrides||null;
+          bestData=s.items; bestModified=s.lastModified; bestWeekOverrides=s.weekOverrides||null; bestRecoveryOverride=s.recoveryOverride||null;
           console.log('[DB] Found fresher data in localStorage:',key,Object.keys(bestData).length,'records');
         }else if(!bestWeekOverrides&&s.weekOverrides&&Object.keys(s.weekOverrides).length>0){
           bestWeekOverrides=s.weekOverrides;
@@ -410,6 +411,7 @@ async function loadState(){
     state.items=bestData;
     state.lastModified=bestModified||Date.now();
     state.weekOverrides=bestWeekOverrides||{};
+    state.recoveryOverride=bestRecoveryOverride||null;
     saveState();
     try{
       for(const key of ['hm_train_state_v4','hm_train_state_v3','hm_train_state_v2']){
@@ -422,7 +424,7 @@ async function loadState(){
 }
 async function saveState(){
   state.lastModified=Date.now();
-  const payload={items:state.items,lastModified:state.lastModified,weekOverrides:state.weekOverrides||{}};
+  const payload={items:state.items,lastModified:state.lastModified,weekOverrides:state.weekOverrides||{},recoveryOverride:state.recoveryOverride||null};
   let dbOk=false, lsOk=false;
   try{
     await dbSet(STORE_NAME,payload);
@@ -480,7 +482,7 @@ function calculateRecovery(){
     }
   }
   if(!latestEx)return null;
-  const hours=getRecoveryHours(latestEx);
+  const hours=state.recoveryOverride?state.recoveryOverride.hours:getRecoveryHours(latestEx);
   let startTime=latestTime;
   if(!startTime){
     startTime=Date.now();
@@ -520,6 +522,77 @@ function updateRecoveryCountdown(){
     tick();
     recoveryTimerId=setInterval(tick,1000);
   }catch(e){console.error('Recovery countdown error:',e);}
+}
+
+function openRecoveryModal(){
+  const recoveryUntil=calculateRecovery();
+  const currentEl=document.getElementById('recoveryCurrent');
+  const autoInfoEl=document.getElementById('recoveryAutoInfo');
+  const overrideInfoEl=document.getElementById('recoveryOverrideInfo');
+  const input=document.getElementById('recoveryInput');
+  if(recoveryUntil){
+    const remaining=recoveryUntil.getTime()-Date.now();
+    if(remaining>0){
+      const h=Math.floor(remaining/3600000);
+      const m=Math.floor((remaining%3600000)/60000);
+      currentEl.textContent=h+'h '+m+'m';
+    }else{currentEl.textContent='已恢复';}
+  }else{currentEl.textContent='无数据';}
+  let latestEx=null,latestDate=null;
+  for(const [date,item] of Object.entries(state.items)){
+    if(!item.checked||!item.exercise||!(item.exercise.distance>0))continue;
+    const di=dateIndex[date];
+    if(!di||di.rest)continue;
+    if(!latestDate||date>latestDate){latestDate=date;latestEx=item.exercise;}
+  }
+  const autoHours=latestEx?getRecoveryHours(latestEx):0;
+  autoInfoEl.textContent='自动计算恢复时长: '+autoHours+' 小时';
+  if(state.recoveryOverride){
+    overrideInfoEl.style.display='block';
+    overrideInfoEl.textContent='当前手动设置: '+state.recoveryOverride.hours+' 小时';
+    input.value=state.recoveryOverride.hours;
+  }else{
+    overrideInfoEl.style.display='none';
+    input.value='';
+  }
+  document.getElementById('recoveryModal').style.display='flex';
+}
+function applyRecoveryOverride(){
+  const input=document.getElementById('recoveryInput');
+  const val=parseFloat(input.value);
+  if(!isNaN(val)&&val>0&&val<=72){
+    if(!confirm('确认将恢复时长设置为 '+val+' 小时？\n（此设置将覆盖自动计算的恢复时长）'))return;
+    state.recoveryOverride={hours:val};
+    saveState();
+    updateRecoveryCountdown();
+    document.getElementById('recoveryModal').style.display='none';
+    showToast('恢复时间已调整为 '+val+' 小时');
+  }else if(input.value.trim()===''){
+    if(state.recoveryOverride){
+      if(!confirm('确认恢复自动计算恢复时长？'))return;
+      state.recoveryOverride=null;
+      saveState();
+      updateRecoveryCountdown();
+      document.getElementById('recoveryModal').style.display='none';
+      showToast('已恢复自动计算');
+    }else{
+      document.getElementById('recoveryModal').style.display='none';
+    }
+  }else{
+    showToast('请输入 1-72 之间的有效数值');
+  }
+}
+function clearRecoveryOverride(){
+  if(!state.recoveryOverride){
+    document.getElementById('recoveryModal').style.display='none';
+    return;
+  }
+  if(!confirm('确认恢复自动计算恢复时长？\n（手动设置将被清除）'))return;
+  state.recoveryOverride=null;
+  saveState();
+  updateRecoveryCountdown();
+  document.getElementById('recoveryModal').style.display='none';
+  showToast('已恢复自动计算');
 }
 
 function renderProgress(){
@@ -850,7 +923,7 @@ function localAnalysis(data){
   }
   if(data.heartRates.length>0){
     const avgHR=Math.round(data.heartRates.reduce((a,b)=>a+b,0)/data.heartRates.length);
-    if(avgHR>160)alerts.push('心率偏高，增加低强度有氧（心率<150）巩固基础');
+    if(avgHR>160)alerts.push('心率偏高，增加低强度有氧（心率<150（鼻呼吸/能完整对话））巩固基础');
     else if(avgHR>155)alerts.push('心率适中偏快，注意区分阈值跑和轻松跑区间');
   }
   if(data.paces.length>=2){
