@@ -233,7 +233,7 @@ const weeks=[
 {d:"周四",date:"2026-10-01",content:"混合跑：2km热身+4km阈值5'50-6'00+3km半马配速6'25+2km放松",dist:"11km",rest:false},
 {d:"周六",date:"2026-10-03",content:"步频训练：1km@步频180+慢走2min恢复 ×4组 + 轻松跑2km",dist:"6km",rest:false},
 {d:"周日",date:"2026-10-04",content:"最长距离训练 18km！前10km配速7'10压节奏，后8km提速到6'25-6'40",dist:"18km",rest:false},
-{d:"周一",date:"2026-10-05",content:"轻松恢复跑 2km",dist:"2km",rest:false}
+{d:"周一",date:"2026-10-05",content:"轻松恢复跑 2km，配速7'30+",dist:"2km",rest:false}
 ]},
 {n:12,phase:"半马专项",range:"10/07-10/13",days:[
 {d:"周四",date:"2026-10-08",content:"阈值跑：2km热身 + 5km阈值5'55-6'05 + 2km放松",dist:"9km",rest:false},
@@ -248,9 +248,9 @@ const weeks=[
 {d:"周一",date:"2026-10-19",content:"轻松跑 2km，配速7'30+",dist:"2km",rest:false}
 ]},
 {n:14,phase:"比赛周",range:"10/21-10/27",days:[
-{d:"周四",date:"2026-10-22",content:"轻松跑 3km + 4组100m加速跑",dist:"4km",rest:false},
-{d:"周六",date:"2026-10-24",content:"轻松跑 2km，保持肌肉活性",dist:"2km",rest:false},
-{d:"周日",date:"2026-10-25",content:"半马比赛日！21.1KM",dist:"21.1km",rest:false}
+{d:"周四",date:"2026-10-22",content:"轻松跑 3km，配速7'30 + 4组100m加速跑",dist:"4km",rest:false},
+{d:"周六",date:"2026-10-24",content:"轻松跑 2km，配速7'30+，保持肌肉活性",dist:"2km",rest:false},
+{d:"周日",date:"2026-10-25",content:"半马比赛日！21.1KM，目标配速6'25-6'40",dist:"21.1km",rest:false}
 ]}
 ];
 
@@ -664,15 +664,6 @@ function renderWeeks(){
     });
     container.appendChild(card);
   });
-  // Auto-scroll to active week only if it's outside viewport
-  setTimeout(()=>{
-    const active=container.querySelector('.week-card.active-week');
-    if(!active)return;
-    const rect=active.getBoundingClientRect();
-    const vh=window.innerHeight;
-    if(rect.top>=0&&rect.bottom<=vh)return; // already fully visible
-    active.scrollIntoView({behavior:'smooth',block:'start'});
-  },100);
 }
 
 // ====== Day Interaction ======
